@@ -1,42 +1,97 @@
-import { Users, Calendar, MapPin, ExternalLink } from 'lucide-react';
+// app/components/Headliner.tsx
+"use client";
 
-export default function Headliner() {
-  // Mocking the hyped featured event
-  const featuredEvent = {
-    name: "Hawaii Smash Regional #10",
-    entrants: 142,
-    date: "Saturday, July 11",
-    location: "Honolulu, HI",
-    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200&auto=format&fit=crop", 
-    url: "https://start.gg"
-  };
+import { formatUnixDate } from "../utils/formatDate";
+
+interface TournamentImage {
+  url: string;
+  type: string;
+}
+
+interface Tournament {
+  id: string;
+  name: string;
+  startAt: number;
+  city: string;
+  url: string;
+  numAttendees: number;
+  images: TournamentImage[] | null;
+}
+
+interface HeadlinerProps {
+  featuredTournament: Tournament;
+}
+
+export default function Headliner({ featuredTournament }: HeadlinerProps) {
+  // 1. Hunt down the official wide banner image from the start.gg images array
+  const bannerImage = featuredTournament.images?.find(
+    (img) => img.type === "banner"
+  )?.url;
+
+  const currentUnixTime = Math.floor(Date.now() / 1000);
 
   return (
-    <section className="w-full bg-gradient-to-b from-red-950/20 to-transparent border border-red-950/40 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-6 items-center my-8">
-      {/* Event Banner */}
-      <div className="w-full md:w-2/5 aspect-video rounded-xl overflow-hidden bg-zinc-800 relative group">
-        <img src={featuredEvent.image} alt={featuredEvent.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
-        <span className="absolute top-3 left-3 bg-red-600 text-white font-black text-xs uppercase px-3 py-1 rounded shadow-lg tracking-wider">
-          🔥 Most Entrances
-        </span>
-      </div>
+    <div className="relative w-full min-h-[280px] sm:min-h-[340px] rounded-2xl overflow-hidden border border-neutral-900 bg-neutral-950 flex items-end p-6 sm:p-8 group shadow-xl">
+      
+      {/* 2. Dynamic Background Canvas: Renders start.gg image if available, else standard fallback */}
+      {bannerImage ? (
+        <>
+          <img
+            src={bannerImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-center filter saturate-[0.85] brightness-[0.45] transition-transform duration-700 group-hover:scale-105"
+          />
+          {/* Deep dark gradient overlay to ensure text readability matching m7mad.dev aesthetic */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
+        </>
+      ) : (
+        // Premium minimal blue glow fallback if the tournament has no banner uploaded on start.gg
+        <div className="absolute inset-0 bg-gradient-to-tr from-neutral-950 via-neutral-900 to-sky-950/20 z-10" />
+      )}
 
-      {/* Event Info */}
-      <div className="w-full md:w-3/5 flex flex-col justify-center">
-        <h2 className="text-2xl md:text-3xl font-black text-zinc-100 mb-3 tracking-tight">
-          {featuredEvent.name}
-        </h2>
+      {/* 3. Text & Info Overlay Content Box */}
+      <div className="relative z-20 w-full max-w-3xl space-y-4">
         
-        <div className="grid grid-cols-2 gap-3 text-sm text-zinc-400 mb-6 max-w-sm">
-          <div className="flex items-center gap-2"><Users size={16} className="text-red-500" /> <span>{featuredEvent.entrants} Entrants</span></div>
-          <div className="flex items-center gap-2"><Calendar size={16} className="text-red-500" /> <span>{featuredEvent.date}</span></div>
-          <div className="flex items-center gap-2 col-span-2"><MapPin size={16} className="text-red-500" /> <span>{featuredEvent.location}</span></div>
+        {/* Featured Badge */}
+        <div className="flex items-center gap-2">
+          <span className="bg-sky-500 text-black px-2.5 py-0.5 rounded-md font-black text-[10px] tracking-widest uppercase font-mono shadow-md animate-pulse">
+            FEATURED BRACKET
+          </span>
+          <span className="bg-neutral-900/90 backdrop-blur-sm text-neutral-400 border border-neutral-800 px-2 py-0.5 rounded-md font-mono text-[10px] whitespace-nowrap">
+            👤 {featuredTournament.numAttendees || 0} ATTENDEES
+          </span>
         </div>
 
-        <a href={featuredEvent.url} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-xl transition shadow-lg shadow-red-900/20 self-start text-sm w-full sm:w-auto">
-          Register on Start.gg <ExternalLink size={16} />
-        </a>
+        {/* Title */}
+        <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+          {featuredTournament.name}
+        </h2>
+
+        {/* Meta Details Row */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-neutral-400 font-medium">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sky-400 font-sans">📍</span>
+            <span>{featuredTournament.city || "Hawaii, USA"}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sky-400 font-sans">📅</span>
+            <span>{formatUnixDate(featuredTournament.startAt)}</span>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <div className="pt-2">
+          <a
+            href={`https://start.gg${featuredTournament.url}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center text-xs bg-white text-black hover:bg-sky-400 hover:text-black px-6 py-3 rounded-xl font-bold tracking-wide transition-all duration-200 active:scale-95 shadow-lg"
+          >
+            {featuredTournament.startAt >= currentUnixTime ? "Register & Enter Bracket" : "View Final Standings"}
+          </a>
+        </div>
+
       </div>
-    </section>
+    </div>
   );
 }
